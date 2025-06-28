@@ -1,4 +1,5 @@
 from colorama import init, Fore, Style
+from enum import Enum
 import os
 
 def removeCharacters(genericString: str, charList: list[chr]) -> str:
@@ -41,4 +42,57 @@ def removeSpaceCaps(genericString: str) -> str:
         
     return ''.join(outputString)
     
+class Direction(Enum):
+    RIGHT = object()
+    LEFT = object()
+    NONE = object()
+
+def LSSCheck(test:str) -> tuple[bool, Direction]:
+    specTest = test.replace(".txt", ".spec")
+
+    LSSIdentifiers = ('LKA','ELK','LDW')
+
+    rightIdentifiers = ('Right', 'Road')
+    leftIdentifiers = ('Left', 'Over', 'Onc', 'CMOv')
+
+    with open(specTest, "r") as specFile:
+        specContent = specFile.readlines()
+
+    descriptionLine = specContent[1]
+
+    isLSS = any(identifier in descriptionLine for identifier in LSSIdentifiers)
+
+    if isLSS: 
+        if any(identifier in descriptionLine for identifier in rightIdentifiers):
+            LSSdirection = Direction.RIGHT
+        elif any(identifier in descriptionLine for identifier in leftIdentifiers):
+            LSSdirection = Direction.LEFT
+        else:
+            raise RuntimeError("No direction was found in the .spec file for the LSS scenario.")
+    else:
+        LSSdirection = Direction.NONE
+        descriptionLine = descriptionLine.replace(" kph", "VUT")
+        
+        specContent[1] = descriptionLine
+
+        with open(specTest, "w") as specFile:
+            specFile.writelines(specContent)
+        
+
+    
+    
+    return (isLSS, LSSdirection)
+
+
+
+
+
+    
+
+
+
+    
+
+
+
 

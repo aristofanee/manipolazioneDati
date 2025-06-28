@@ -18,7 +18,6 @@ parentFolder = os.path.dirname(sourceFolder)
 folderName = os.path.basename(sourceFolder)
 
 cleanFolderName = functions.removeCharacters(folderName, invalidCharacters)
-
 cleanFolderName = cleanFolderName + "_manipulated"
 
 print("Copying files...")
@@ -67,17 +66,21 @@ for test in txtFiles:
             fileContent = file.readlines()
 
         descriptionLines = fileContent[:2]
-        columnNames = fileContent[2].strip().split('\t')
-        unitsOfMeasure = fileContent[3].strip().split('\t')
+        unitsOfMeasure = fileContent[3]
 
-        columnNames = [functions.removeCharacters(header, invalidHeaderCharacters) for header in columnNames]
-        
-        #print(columnNames)
+        # Importing the csv into a pandas table
+        table = pd.read_csv(test, skiprows=[0,1,3], header=0, encoding="cp1252", delimiter='\t')
 
-        table = pd.read_csv(test, skiprows=2, header=0, encoding="cp1252")
-
+        # Edit the name of the headers to match the Matlab ones TODO
         table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
         table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
+
+        a = table['Time'].tolist()
+
+        (isLSS, LSSDirection) = functions.LSSCheck(test)
+
+        print(isLSS, LSSDirection)
+
 
     except Exception as e:
         failedFiles.append((relativePath, e))
@@ -86,10 +89,6 @@ for test in txtFiles:
         functions.decorateSentence(errorMessage, True)
         
 
-
-
-
 if failedFiles:
     # TODO
-    print(len(failedFiles))
-    print("there are some failed files") 
+    print("There are", len(failedFiles),  "failed files") 
