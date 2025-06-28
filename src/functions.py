@@ -1,12 +1,11 @@
 from colorama import init, Fore, Style
 import os
 
-def removeCharacters(genericString: str) -> str:
-    invalidCharacters = ['?', '�', '[',']', '⁻', chr(8314)]
+def removeCharacters(genericString: str, charList: list[chr]) -> str:
 
     cleanString = genericString
 
-    for characters in invalidCharacters:
+    for characters in charList:
         cleanString = cleanString.replace(characters, '')
 
     return cleanString
@@ -24,3 +23,22 @@ def decorateSentence(sentence: str, isRed: bool):
     print(sentence)
     print("---------------------------------------------------------------------------------")
     print(Style.RESET_ALL)
+
+            
+def removeSpaceCaps(genericString: str) -> str:
+    outputString:str = []
+    spacePresent = False
+
+    for index, char in enumerate(genericString):
+        if char == ' ':
+            spacePresent = True
+        else:
+            if spacePresent and char.isalpha():
+                outputString.append(char.upper())
+                spacePresent = False
+            else:
+                outputString.append(char)
+        
+    return ''.join(outputString)
+    
+
