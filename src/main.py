@@ -75,11 +75,16 @@ for test in txtFiles:
         table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
         table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
 
-        a = table['Time'].tolist()
-
         (isLSS, LSSDirection) = functions.LSSCheck(test)
 
-        print(isLSS, LSSDirection)
+        table['RelativeLateralDistance'] = table['RelativeLateralDistance'] * -1
+
+        (newTime, startTestIndex) = functions.TTCProcess(
+            table['TimeToCollisionLongitudinal'], 
+            table['Time'], isLSS)
+
+
+
 
 
     except Exception as e:

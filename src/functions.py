@@ -1,5 +1,7 @@
 from colorama import init, Fore, Style
 from enum import Enum
+import numpy as np
+import pandas as pd
 import os
 
 def removeCharacters(genericString: str, charList: list[chr]) -> str:
@@ -77,22 +79,60 @@ def LSSCheck(test:str) -> tuple[bool, Direction]:
 
         with open(specTest, "w") as specFile:
             specFile.writelines(specContent)
-        
-
-    
     
     return (isLSS, LSSdirection)
 
+def TTCProcess(TTCVector, TimeVector, isLSS):
 
+    if isLSS or (TTCVector == 0).all():
+        newTime = None
+        startTimeIndex = None
+        return (newTime, startTimeIndex)
 
+    index = 0
 
+    while index < len(TTCVector) or not index:
 
-    
+        if TTCVector[0] == 0:
+            TTCVector = TTCVector.copy()
+            index = TTCVector[TTCVector > 0].index.tolist()[0]
+            TTCVector[0:index] = TTCVector[index]
+            index = 0
+        
+        index = TTCVector[TTCVector == 0].index.tolist()
 
+        if len(index) == 0:
+            break
+        else:
+            index = index[0]
 
+        yStart = (TTCVector[index - 1], index - 1)
 
-    
+        index = TTCVector[index:][TTCVector > 0].index.tolist()
 
+        if len(index) == 0:
+            print("second break")
+            break
+        else:
+            index = index[0]
 
+        yEnd = (TTCVector[index], index)
+        xEq = np.arange(0, yEnd[1] - yStart[1]) 
+        m = (yEnd[0] - yStart[0]) / (yEnd[1] - yStart[1])
+        TTCEq = m*xEq + yStart[0]
+        TTCVector[yStart[1]:yEnd[1]] = TTCEq
+
+    startTestIndex = TTCVector[TTCVector < 4].index.tolist()
+
+    # TODO Check with a real test with a working TTC
+
+    if len(index) == 0:
+        startTestIndex = 0
+    else:
+        startTestIndex = startTestIndex[0]
+
+    newTime = TimeVector[startTestIndex:] - 4 - TimeVector[startTestIndex];
+
+    return(newTime,startTestIndex)
 
 

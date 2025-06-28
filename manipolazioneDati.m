@@ -10,7 +10,7 @@ sourceFolder = uigetdir;
 warningMode = 'auto';
 
 % List of characters that are not well recived by X-Zero
-invalidCharacters = ["?", "²", "[", "]", string(char(8315))];
+invalidCharacters = ["?", "ï¿½", "[", "]", string(char(8315))];
 
 % Clean the folder name and create manipulated folder name
 cleanFolderName = string(folderName);
@@ -178,7 +178,6 @@ function [newTime, startTestIndex] = TTCProcess(TTCVector, TimeVector, isLSS)
             TTCVector(1:index) = TTCVector(index);
             index = 1;
         end
-        
         
         % Tries to find the index where TTC = 0
         index = find(TTCVector(1:end) == 0, 1);
