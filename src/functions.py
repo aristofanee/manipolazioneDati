@@ -3,6 +3,7 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 import os
+import plotly.express as px
 
 def removeCharacters(genericString: str, charList: list[str]) -> str:
 
@@ -111,7 +112,6 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         index = TTCVector[index:][TTCVector > 0].index.tolist()
 
         if len(index) == 0:
-            print("second break")
             break
         else:
             index = index[0]
@@ -120,31 +120,18 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         xEq = np.arange(0, yEnd[1] - yStart[1])
         m = (yEnd[0] - yStart[0]) / (yEnd[1] - yStart[1])
         TTCEq = m*xEq + yStart[0]
-
-        print(TTCEq)
-        print(TTCVector[yStart[1]:yEnd[1]])
         TTCVector[yStart[1]:yEnd[1]] = TTCEq
-        print(TTCVector[yStart[1]:yEnd[1]])
 
 
     startTestIndex = TTCVector[TTCVector < 4].index.tolist()
 
     # TODO Check with a real test with a working TTC
-
     if len(startTestIndex) == 0:
         startTestIndex = 0
     else:
         startTestIndex = startTestIndex[0]
 
-    print("-------------------------------------------------------------------------------")
-    print(TTCVector)
-    print("start test index: ",startTestIndex)
-
     newTime = TimeVector[startTestIndex:] - 4 - TimeVector[startTestIndex];
-
-    print(newTime)
-
-
 
     return(newTime,startTestIndex)
 
@@ -155,6 +142,39 @@ def isRowAllFloat(row):
         return True
     except ValueError:
         return False
+
+def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
+
+    ADC6Out = ADC6Vector.copy()
+    ADC6Out[:] = 0
+
+    if isLSS:
+        return ADC6Out
+
+    warningThreshhold = 1
+
+    match warningMode:
+        case 'auto':
+            dY = ADC6Vector.diff()
+            dY[0] = dY[1]
+            dY = dY.abs()
+            indexFirstWarning = dY.iloc[startTestIndex:][dY.iloc[startTestIndex:] > warningThreshhold].index.tolist()
+        case _:
+            dY = ADC6Vector.diff()
+            dY[0] = dY[1]
+            dY = dY.abs()
+            indexFirstWarning = dY.iloc[startTestIndex:][dY.iloc[startTestIndex:] > warningThreshhold].index.tolist()
+
+    if len(indexFirstWarning) != 0:
+        ADC6Out[startTestIndex + indexFirstWarning[0]:] = 5
+
+    return ADC6Out
+
+
+
+
+
+
 
 def exportFile(testFile, table, headers:list[str]):
     with open(testFile, 'w', newline='', encoding="cp1252") as file:

@@ -10,6 +10,7 @@ root = Tk()
 root.withdraw()
 
 warningMode = 'auto'
+adc6Name = 'ADC6'
 invalidCharacters = ['?', '�', '[',']', '⁻', chr(8314)]
 invalidHeaderCharacters = ['_', '(', ')', '.', '/']
 
@@ -72,7 +73,7 @@ for test in txtFiles:
         table = pd.read_csv(test, skiprows=[0,1,3], header=0, encoding="cp1252", delimiter='\t')
         table = table[table.apply(functions.isRowAllFloat, axis=1)].reset_index(drop=True)
         table = table.astype('float')
-        # print(table['TimeToCollisionLongitudinal'])
+
         # Edit the name of the headers to match the Matlab ones TODO
         table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
         table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
@@ -81,10 +82,12 @@ for test in txtFiles:
 
         table['RelativeLateralDistance'] = table['RelativeLateralDistance'] * -1
 
-
         (newTime, startTestIndex) = functions.TTCProcess(
             table['TimeToCollisionLongitudinal'],
             table['Time'], isLSS)
+
+
+        table['ADC6'] = functions.warningProcess(table['ADC6'], isLSS, newTime, startTestIndex, warningMode)
 
         header = descriptionLines
         header.append(unitsOfMeasure)
