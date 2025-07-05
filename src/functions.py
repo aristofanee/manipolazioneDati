@@ -120,7 +120,12 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         xEq = np.arange(0, yEnd[1] - yStart[1]) 
         m = (yEnd[0] - yStart[0]) / (yEnd[1] - yStart[1])
         TTCEq = m*xEq + yStart[0]
+
+        print(TTCEq)
+        print(TTCVector[yStart[1]:yEnd[1]])
         TTCVector[yStart[1]:yEnd[1]] = TTCEq
+        print(TTCVector[yStart[1]:yEnd[1]])
+
 
     startTestIndex = TTCVector[TTCVector < 4].index.tolist()
 
@@ -130,9 +135,23 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         startTestIndex = 0
     else:
         startTestIndex = startTestIndex[0]
-
+        
+    print("start test index: ",startTestIndex)
+    print("HEREEEEEEEEEE")
+    print(TimeVector)
     newTime = TimeVector[startTestIndex:] - 4 - TimeVector[startTestIndex];
 
+
     return(newTime,startTestIndex)
+
+
+def isRowAllFloat(row):
+    try:
+        [float(x) for x in row]
+        return True
+    except ValueError:
+        return False
+    
+
 
 
