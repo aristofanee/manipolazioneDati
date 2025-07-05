@@ -3,7 +3,6 @@ from enum import Enum
 import numpy as np
 import pandas as pd
 import os
-import plotly.express as px
 from scipy import signal
 
 def removeCharacters(genericString: str, charList: list[str]) -> str:
