@@ -5,6 +5,7 @@ import functions
 import shutil
 import numpy as np
 import pandas as pd
+from io import StringIO
 
 root = Tk()
 root.withdraw()
@@ -15,6 +16,11 @@ invalidCharacters = ['?', '�', '[',']', '⁻', chr(8314)]
 invalidHeaderCharacters = ['_', '(', ')', '.', '/']
 
 sourceFolder = askdirectory(title="Select the folder.")
+
+if not sourceFolder:
+    print("No folder was selected.")
+    quit()
+
 parentFolder = os.path.dirname(sourceFolder)
 folderName = os.path.basename(sourceFolder)
 
@@ -40,7 +46,7 @@ for root, dirs, files in os.walk(manipulatedFolder, topdown=False):
         os.rename(fullPath, fullRenamePath)
 
 txtFiles: list[str] = []
-for root, dirs, files in os.walk(manipulatedFolder, topdown=False):
+for root, dirs, files in os.walk(manipulatedFolder):
     for file in files:
         if file.endswith(".txt"):
             fullPath = os.path.join(root, file)
@@ -49,8 +55,12 @@ for root, dirs, files in os.walk(manipulatedFolder, topdown=False):
 nTests = len(txtFiles)
 failedFiles: list[tuple[str, Exception]] = []
 
+currentTestCount = 0;
+
 # Start of the main loop
 for test in txtFiles:
+    currentTestCount += 1
+
     folderTest = os.path.dirname(test)
     relativePath = test.replace(manipulatedFolder, '')
 
@@ -67,14 +77,25 @@ for test in txtFiles:
             fileContent = file.readlines()
 
         descriptionLines = fileContent[:2]
+
+        numberDataRows = int(descriptionLines[1].split("=")[1].strip())
+        totalLines = len(fileContent)
+
         unitsOfMeasure = fileContent[3]
 
-        # Importing the csv into a pandas table
-        table = pd.read_csv(test, skiprows=[0,1,3], header=0, encoding="cp1252", delimiter='\t')
-        table = table[table.apply(functions.isRowAllFloat, axis=1)].reset_index(drop=True)
-        table = table.astype('float')
+        header = descriptionLines
+        header.append(unitsOfMeasure)
 
-        # Edit the name of the headers to match the Matlab ones TODO
+        # Importing the csv into a pandas table
+        rowsSkipped = [0,1,3] + list(range(4 + numberDataRows, totalLines))
+
+        data = StringIO(''.join(fileContent))
+        table = pd.read_csv(data, skiprows=rowsSkipped, header=0, encoding="cp1252", delimiter='\t', dtype = float)
+
+        #table = table[table.apply(functions.isRowAllFloat, axis=1)].reset_index(drop=True)
+        #table = table.astype('float')
+
+        # Edit the name of the headers to match the Matlab
         table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
         table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
 
@@ -83,29 +104,22 @@ for test in txtFiles:
         table['RelativeLateralDistance'] = table['RelativeLateralDistance'] * -1
 
         (newTime, startTestIndex) = functions.TTCProcess(
-            table['TimeToCollisionLongitudinal'],
-            table['Time'], isLSS)
+            table['TimeToCollisionLongitudinal'].copy(),
+            table['Time'].copy(), isLSS)
 
-
-        table['ADC6'] = functions.warningProcess(table['ADC6'], isLSS, newTime, startTestIndex, warningMode)
+        table['ADC6'] = functions.warningProcess(table['ADC6'].copy(), isLSS, newTime, startTestIndex, warningMode)
 
         if isLSS:
             dt = table['Time'][1] - table['Time'][0]
-            print("dt is equal to this: ", dt)
             approachSpeed, distToLine = functions.LSSProcessing(test,dt,table["ActualYFrontAxle"].copy(), LSSDirection)
             table['ApproachSpeed'] = approachSpeed
             table['DistToLine'] = distToLine
 
-
-
-        header = descriptionLines
-        header.append(unitsOfMeasure)
         functions.exportFile(test, table, header)
 
-
-
-
-
+        currentPercentage = currentTestCount/nTests * 100
+        formattedPercentage = f"{currentPercentage:.2f}%"
+        print(formattedPercentage, "\t", relativePath, "was processed.")
 
     except Exception as e:
         #except ValueError as e:
@@ -116,5 +130,6 @@ for test in txtFiles:
 
 
 if len(failedFiles) != 0:
-    # TODO implement the real output log
-    print("There are", len(failedFiles),  "failed files")
+    with open(os.path.join(parentFolder, "error_" + folderName + ".log"), 'w') as file:
+        for errorPath, error in failedFiles:
+            file.write("Error: " + str(error) + " File: " + errorPath + "\n")

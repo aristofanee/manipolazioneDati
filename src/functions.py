@@ -172,7 +172,7 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
     return ADC6Out
 
 
-def LSSProcessing(test, dt:float, positionVector:pd.Series, LSSDirection):
+def LSSProcessing(test, dt:float, positionVector, LSSDirection):
     parentFolder = os.path.dirname(test)
     lineFolder = os.path.dirname(parentFolder)
     zeroFile = os.path.join(lineFolder, "zero.ini")
@@ -187,7 +187,6 @@ def LSSProcessing(test, dt:float, positionVector:pd.Series, LSSDirection):
     distToLine = positionVector - zero
 
     Wn = 10/50
-    #BBB, AAA = signal.butter(6, Wn, 'low', output='ba')
 
     sos = signal.butter(6, Wn, btype='low', output='sos')
 
@@ -196,24 +195,7 @@ def LSSProcessing(test, dt:float, positionVector:pd.Series, LSSDirection):
 
     derivPosition = signal.sosfiltfilt(sos, derivPosition)
 
-    px.line(derivPosition).show()
-
     return (derivPosition, distToLine)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def exportFile(testFile, table, headers:list[str]):
