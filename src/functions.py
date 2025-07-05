@@ -95,9 +95,11 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
 
     while index < len(TTCVector) or not index:
 
+
         if TTCVector[0] == 0:
-            TTCVector = TTCVector.copy()
+            #TTCVector = TTCVector.copy()
             index = TTCVector[TTCVector > 0].index.tolist()[0]
+            print("this is the index:" , index)
             TTCVector[0:index] = TTCVector[index]
             index = 0
 
@@ -113,6 +115,7 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         index = TTCVector[index:][TTCVector > 0].index.tolist()
 
         if len(index) == 0:
+            startTestIndex = 0
             break
         else:
             index = index[0]
@@ -149,7 +152,7 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
     ADC6Out = ADC6Vector.copy()
     ADC6Out[:] = 0
 
-    if isLSS:
+    if isLSS or startTestIndex == None:
         return ADC6Out
 
     warningThreshhold = 1
@@ -191,7 +194,7 @@ def LSSProcessing(test, dt:float, positionVector, LSSDirection):
     sos = signal.butter(6, Wn, btype='low', output='sos')
 
     derivPosition = positionVector.diff() / dt
-    derivPosition[0] = derivPosition[1] # Removes the NaN at the first thing from the vector
+    derivPosition[0] = derivPosition[1] # Removes the NaN as the first element from the vector
 
     derivPosition = signal.sosfiltfilt(sos, derivPosition)
 
@@ -200,6 +203,9 @@ def LSSProcessing(test, dt:float, positionVector, LSSDirection):
 
 def exportFile(testFile, table, headers:list[str]):
     with open(testFile, 'w', newline='', encoding="cp1252") as file:
-        for lines in headers:
-            file.write(lines)
-        table.to_csv(file, sep = "\t", index=False)
+
+        file.write(headers[0])
+        file.write(headers[1])
+        file.write('\t'.join(table.columns) + "\n")
+        file.write(headers[2])
+        table.to_csv(file, sep = "\t", index = False, header = False)

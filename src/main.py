@@ -83,8 +83,8 @@ for test in txtFiles:
 
         unitsOfMeasure = fileContent[3]
 
-        header = descriptionLines
-        header.append(unitsOfMeasure)
+        headerLines = descriptionLines
+        headerLines.append(unitsOfMeasure)
 
         # Importing the csv into a pandas table
         rowsSkipped = [0,1,3] + list(range(4 + numberDataRows, totalLines))
@@ -115,14 +115,14 @@ for test in txtFiles:
             table['ApproachSpeed'] = approachSpeed
             table['DistToLine'] = distToLine
 
-        functions.exportFile(test, table, header)
+        functions.exportFile(test, table, headerLines)
 
         currentPercentage = currentTestCount/nTests * 100
         formattedPercentage = f"{currentPercentage:.2f}%"
         print(formattedPercentage, "\t", relativePath, "was processed.")
 
-    except Exception as e:
-        #except ValueError as e:
+    #except Exception as e:
+    except ValueError as e:
         failedFiles.append((relativePath, e))
         errorMessage = "There was an error: " + str(e) + "\n"
         errorMessage = errorMessage + relativePath + " was NOT processed"
