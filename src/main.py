@@ -89,6 +89,15 @@ for test in txtFiles:
 
         table['ADC6'] = functions.warningProcess(table['ADC6'], isLSS, newTime, startTestIndex, warningMode)
 
+        if isLSS:
+            dt = table['Time'][1] - table['Time'][0]
+            print("dt is equal to this: ", dt)
+            approachSpeed, distToLine = functions.LSSProcessing(test,dt,table["ActualYFrontAxle"].copy(), LSSDirection)
+            table['ApproachSpeed'] = approachSpeed
+            table['DistToLine'] = distToLine
+
+
+
         header = descriptionLines
         header.append(unitsOfMeasure)
         functions.exportFile(test, table, header)
@@ -98,14 +107,14 @@ for test in txtFiles:
 
 
 
-    #except Exception as e:
-    except ValueError as e:
+    except Exception as e:
+        #except ValueError as e:
         failedFiles.append((relativePath, e))
         errorMessage = "There was an error: " + str(e) + "\n"
         errorMessage = errorMessage + relativePath + " was NOT processed"
         functions.decorateSentence(errorMessage, True)
 
 
-if failedFiles:
+if len(failedFiles) != 0:
     # TODO implement the real output log
     print("There are", len(failedFiles),  "failed files")

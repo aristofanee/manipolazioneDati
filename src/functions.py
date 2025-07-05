@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import os
 import plotly.express as px
+from scipy import signal
 
 def removeCharacters(genericString: str, charList: list[str]) -> str:
 
@@ -169,6 +170,45 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
         ADC6Out[startTestIndex + indexFirstWarning[0]:] = 5
 
     return ADC6Out
+
+
+def LSSProcessing(test, dt:float, positionVector:pd.Series, LSSDirection):
+    parentFolder = os.path.dirname(test)
+    lineFolder = os.path.dirname(parentFolder)
+    zeroFile = os.path.join(lineFolder, "zero.ini")
+
+    if not os.path.isfile(zeroFile):
+        raise Exception("No zero.ini file was found.")
+
+    with open(zeroFile, 'r') as file:
+        zero = file.readline()
+
+    zero = float(zero)
+    distToLine = positionVector - zero
+
+    Wn = 10/50
+    #BBB, AAA = signal.butter(6, Wn, 'low', output='ba')
+
+    sos = signal.butter(6, Wn, btype='low', output='sos')
+
+    derivPosition = positionVector.diff() / dt
+    derivPosition[0] = derivPosition[1] # Removes the NaN at the first thing from the vector
+
+    derivPosition = signal.sosfiltfilt(sos, derivPosition)
+
+    px.line(derivPosition).show()
+
+    return (derivPosition, distToLine)
+
+
+
+
+
+
+
+
+
+
 
 
 
