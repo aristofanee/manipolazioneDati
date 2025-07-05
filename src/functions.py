@@ -185,9 +185,11 @@ def LSSProcessing(test, dt: float, positionVector, LSSDirection):
     return (derivPosition, distToLine)
 
 def exportFile(testFile, table, headers: list[str]):
-    with open(testFile, 'w', newline='', encoding="cp1252") as file:
+    with open(testFile, 'w', newline='\r\n', encoding="cp1252") as file:
         file.write(headers[0])
         file.write(headers[1])
         file.write('\t'.join(table.columns) + "\n")
         file.write(headers[2])
-        table.to_csv(file, sep="\t", index=False, header=False)
+
+    with open(testFile, 'a', newline='', encoding="cp1252") as file:
+        table.to_csv(file, sep="\t", index=False, header=False, lineterminator = '\r\n')
