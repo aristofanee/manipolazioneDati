@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import os
 
-def removeCharacters(genericString: str, charList: list[chr]) -> str:
+def removeCharacters(genericString: str, charList: list[str]) -> str:
 
     cleanString = genericString
 
@@ -27,9 +27,9 @@ def decorateSentence(sentence: str, isRed: bool):
     print("---------------------------------------------------------------------------------")
     print(Style.RESET_ALL)
 
-            
+
 def removeSpaceCaps(genericString: str) -> str:
-    outputString:str = []
+    outputString:list[str] = []
     spacePresent = False
 
     for index, char in enumerate(genericString):
@@ -41,9 +41,9 @@ def removeSpaceCaps(genericString: str) -> str:
                 spacePresent = False
             else:
                 outputString.append(char)
-        
+
     return ''.join(outputString)
-    
+
 class Direction(Enum):
     RIGHT = object()
     LEFT = object()
@@ -64,7 +64,7 @@ def LSSCheck(test:str) -> tuple[bool, Direction]:
 
     isLSS = any(identifier in descriptionLine for identifier in LSSIdentifiers)
 
-    if isLSS: 
+    if isLSS:
         if any(identifier in descriptionLine for identifier in rightIdentifiers):
             LSSdirection = Direction.RIGHT
         elif any(identifier in descriptionLine for identifier in leftIdentifiers):
@@ -74,12 +74,12 @@ def LSSCheck(test:str) -> tuple[bool, Direction]:
     else:
         LSSdirection = Direction.NONE
         descriptionLine = descriptionLine.replace(" kph", "VUT")
-        
+
         specContent[1] = descriptionLine
 
         with open(specTest, "w") as specFile:
             specFile.writelines(specContent)
-    
+
     return (isLSS, LSSdirection)
 
 def TTCProcess(TTCVector, TimeVector, isLSS):
@@ -98,7 +98,7 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
             index = TTCVector[TTCVector > 0].index.tolist()[0]
             TTCVector[0:index] = TTCVector[index]
             index = 0
-        
+
         index = TTCVector[TTCVector == 0].index.tolist()
 
         if len(index) == 0:
@@ -117,7 +117,7 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
             index = index[0]
 
         yEnd = (TTCVector[index], index)
-        xEq = np.arange(0, yEnd[1] - yStart[1]) 
+        xEq = np.arange(0, yEnd[1] - yStart[1])
         m = (yEnd[0] - yStart[0]) / (yEnd[1] - yStart[1])
         TTCEq = m*xEq + yStart[0]
 
@@ -131,15 +131,19 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
 
     # TODO Check with a real test with a working TTC
 
-    if len(index) == 0:
+    if len(startTestIndex) == 0:
         startTestIndex = 0
     else:
         startTestIndex = startTestIndex[0]
-        
+
+    print("-------------------------------------------------------------------------------")
+    print(TTCVector)
     print("start test index: ",startTestIndex)
-    print("HEREEEEEEEEEE")
-    print(TimeVector)
+
     newTime = TimeVector[startTestIndex:] - 4 - TimeVector[startTestIndex];
+
+    print(newTime)
+
 
 
     return(newTime,startTestIndex)
@@ -151,7 +155,9 @@ def isRowAllFloat(row):
         return True
     except ValueError:
         return False
-    
 
-
-
+def exportFile(testFile, table, headers:list[str]):
+    with open(testFile, 'w', newline='', encoding="cp1252") as file:
+        for lines in headers:
+            file.write(lines)
+        table.to_csv(file, sep = "\t", index=False)
