@@ -11,7 +11,7 @@ if (-Not (Test-Path $VenvDir)) {
     python -m venv venv
 }
 
-& "$PythonExe" "venv\Scripts\activate"
+& "venv\Scripts\activate"
 
 Write-Host "`n--- Installing requirements..."
 & "$PythonExe" -m pip install -r requirements.txt
