@@ -129,6 +129,8 @@ def main():
                 table['ApproachSpeed'] = approachSpeed
                 table['DistToLine'] = distToLine
 
+            table = table.rename(columns = {'TimeToCollisionLongitudinal':'TimeToCollisionlongitudinal'})
+
             functions.exportFile(test, table, headerLines)
 
             currentPercentage = currentTestCount / nTests * 100

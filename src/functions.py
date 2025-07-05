@@ -87,7 +87,6 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
     while index < len(TTCVector) or not index:
         if TTCVector[0] == 0:
             index = TTCVector[TTCVector > 0].index.tolist()[0]
-            print("this is the index:" , index)
             TTCVector[0:index] = TTCVector[index]
             index = 0
 
