@@ -1,17 +1,11 @@
 from colorama import init, Fore, Style
 from enum import Enum
-import numpy as np
-import pandas as pd
 import os
-from scipy import signal
 
 def removeCharacters(genericString: str, charList: list[str]) -> str:
-
     cleanString = genericString
-
     for characters in charList:
         cleanString = cleanString.replace(characters, '')
-
     return cleanString
 
 def testCheck(test: str) -> bool:
@@ -28,9 +22,8 @@ def decorateSentence(sentence: str, isRed: bool):
     print("---------------------------------------------------------------------------------")
     print(Style.RESET_ALL)
 
-
 def removeSpaceCaps(genericString: str) -> str:
-    outputString:list[str] = []
+    outputString: list[str] = []
     spacePresent = False
 
     for index, char in enumerate(genericString):
@@ -50,11 +43,10 @@ class Direction(Enum):
     LEFT = object()
     NONE = object()
 
-def LSSCheck(test:str) -> tuple[bool, Direction]:
+def LSSCheck(test: str) -> tuple[bool, Direction]:
     specTest = test.replace(".txt", ".spec")
 
     LSSIdentifiers = ('LKA','ELK','LDW')
-
     rightIdentifiers = ('Right', 'Road')
     leftIdentifiers = ('Left', 'Over', 'Onc', 'CMOv')
 
@@ -62,7 +54,6 @@ def LSSCheck(test:str) -> tuple[bool, Direction]:
         specContent = specFile.readlines()
 
     descriptionLine = specContent[1]
-
     isLSS = any(identifier in descriptionLine for identifier in LSSIdentifiers)
 
     if isLSS:
@@ -75,7 +66,6 @@ def LSSCheck(test:str) -> tuple[bool, Direction]:
     else:
         LSSdirection = Direction.NONE
         descriptionLine = descriptionLine.replace(" kph", "VUT")
-
         specContent[1] = descriptionLine
 
         with open(specTest, "w") as specFile:
@@ -84,6 +74,8 @@ def LSSCheck(test:str) -> tuple[bool, Direction]:
     return (isLSS, LSSdirection)
 
 def TTCProcess(TTCVector, TimeVector, isLSS):
+    # Lazy import numpy only when needed
+    import numpy as np
 
     if isLSS or (TTCVector == 0).all():
         newTime = None
@@ -93,10 +85,7 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
     index = 0
 
     while index < len(TTCVector) or not index:
-
-
         if TTCVector[0] == 0:
-            #TTCVector = TTCVector.copy()
             index = TTCVector[TTCVector > 0].index.tolist()[0]
             print("this is the index:" , index)
             TTCVector[0:index] = TTCVector[index]
@@ -110,7 +99,6 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
             index = index[0]
 
         yStart = (TTCVector[index - 1], index - 1)
-
         index = TTCVector[index:][TTCVector > 0].index.tolist()
 
         if len(index) == 0:
@@ -125,19 +113,16 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         TTCEq = m*xEq + yStart[0]
         TTCVector[yStart[1]:yEnd[1]] = TTCEq
 
-
     startTestIndex = TTCVector[TTCVector < 4].index.tolist()
 
-    # TODO Check with a real test with a working TTC
     if len(startTestIndex) == 0:
         startTestIndex = 0
     else:
         startTestIndex = startTestIndex[0]
 
-    newTime = TimeVector[startTestIndex:] - 4 - TimeVector[startTestIndex];
+    newTime = TimeVector[startTestIndex:] - 4 - TimeVector[startTestIndex]
 
-    return(newTime,startTestIndex)
-
+    return(newTime, startTestIndex)
 
 def isRowAllFloat(row):
     try:
@@ -147,7 +132,6 @@ def isRowAllFloat(row):
         return False
 
 def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
-
     ADC6Out = ADC6Vector.copy()
     ADC6Out[:] = 0
 
@@ -173,8 +157,10 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
 
     return ADC6Out
 
+def LSSProcessing(test, dt: float, positionVector, LSSDirection):
+    # Lazy import scipy only when needed for LSS processing
+    from scipy import signal
 
-def LSSProcessing(test, dt:float, positionVector, LSSDirection):
     parentFolder = os.path.dirname(test)
     lineFolder = os.path.dirname(parentFolder)
     zeroFile = os.path.join(lineFolder, "zero.ini")
@@ -189,22 +175,19 @@ def LSSProcessing(test, dt:float, positionVector, LSSDirection):
     distToLine = positionVector - zero
 
     Wn = 10/50
-
     sos = signal.butter(6, Wn, btype='low', output='sos')
 
     derivPosition = positionVector.diff() / dt
-    derivPosition[0] = derivPosition[1] # Removes the NaN as the first element from the vector
+    derivPosition[0] = derivPosition[1]  # Removes the NaN as the first element from the vector
 
     derivPosition = signal.sosfiltfilt(sos, derivPosition)
 
     return (derivPosition, distToLine)
 
-
-def exportFile(testFile, table, headers:list[str]):
+def exportFile(testFile, table, headers: list[str]):
     with open(testFile, 'w', newline='', encoding="cp1252") as file:
-
         file.write(headers[0])
         file.write(headers[1])
         file.write('\t'.join(table.columns) + "\n")
         file.write(headers[2])
-        table.to_csv(file, sep = "\t", index = False, header = False)
+        table.to_csv(file, sep="\t", index=False, header=False)

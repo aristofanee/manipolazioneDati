@@ -1,135 +1,151 @@
 import os
-from tkinter.filedialog import askdirectory
-from tkinter import Tk
-import functions
 import shutil
-import numpy as np
-import pandas as pd
+import functions
 from io import StringIO
 
-root = Tk()
-root.withdraw()
+def get_source_folder():
+    """Lazy import and use GUI only when needed"""
+    from tkinter.filedialog import askdirectory
+    from tkinter import Tk
 
-warningMode = 'auto'
-adc6Name = 'ADC6'
-invalidCharacters = ['?', '�', '[',']', '⁻', chr(8314)]
-invalidHeaderCharacters = ['_', '(', ')', '.', '/']
+    root = Tk()
+    root.withdraw()
 
-sourceFolder = askdirectory(title="Select the folder.")
+    sourceFolder = askdirectory(title="Select the folder.")
 
-if not sourceFolder:
-    print("No folder was selected.")
-    quit()
+    if not sourceFolder:
+        print("No folder was selected.")
+        return None
 
-parentFolder = os.path.dirname(sourceFolder)
-folderName = os.path.basename(sourceFolder)
+    return sourceFolder
 
-cleanFolderName = functions.removeCharacters(folderName, invalidCharacters)
-cleanFolderName = cleanFolderName + "_manipulated"
+def load_pandas():
+    """Lazy import pandas only when processing files"""
+    import pandas as pd
+    return pd
 
-print("Copying files...")
-manipulatedFolder = os.path.join(parentFolder,cleanFolderName)
-shutil.copytree(sourceFolder, manipulatedFolder, dirs_exist_ok=True)
-print("All files have been copied.\n")
+def main():
+    # Configuration
+    warningMode = 'auto'
+    adc6Name = 'ADC6'
+    invalidCharacters = ['?', '�', '[', ']', '⁻', chr(8314)]
+    invalidHeaderCharacters = ['_', '(', ')', '.', '/']
 
-for root, dirs, files in os.walk(manipulatedFolder, topdown=False):
-    for file in files:
-        if file.endswith(".txt") and "Current" in file:
-            fullPath = os.path.join(root, file)
-            os.remove(fullPath)
+    # Get source folder with lazy GUI import
+    sourceFolder = get_source_folder()
+    if not sourceFolder:
+        return
 
-    for dir in dirs:
-        newDirName = functions.removeCharacters(dir, invalidCharacters)
-        fullPath = os.path.join(root, dir)
-        fullRenamePath = os.path.join(root, newDirName)
+    # Setup folders
+    parentFolder = os.path.dirname(sourceFolder)
+    folderName = os.path.basename(sourceFolder)
 
-        os.rename(fullPath, fullRenamePath)
+    cleanFolderName = functions.removeCharacters(folderName, invalidCharacters)
+    cleanFolderName = cleanFolderName + "_manipulated"
 
-txtFiles: list[str] = []
-for root, dirs, files in os.walk(manipulatedFolder):
-    for file in files:
-        if file.endswith(".txt"):
-            fullPath = os.path.join(root, file)
-            txtFiles.append(fullPath)
+    print("Copying files...")
+    manipulatedFolder = os.path.join(parentFolder, cleanFolderName)
+    shutil.copytree(sourceFolder, manipulatedFolder, dirs_exist_ok=True)
+    print("All files have been copied.\n")
 
-nTests = len(txtFiles)
-failedFiles: list[tuple[str, Exception]] = []
+    # Clean up files and directories
+    for root, dirs, files in os.walk(manipulatedFolder, topdown=False):
+        for file in files:
+            if file.endswith(".txt") and "Current" in file:
+                fullPath = os.path.join(root, file)
+                os.remove(fullPath)
 
-currentTestCount = 0;
+        for dir in dirs:
+            newDirName = functions.removeCharacters(dir, invalidCharacters)
+            fullPath = os.path.join(root, dir)
+            fullRenamePath = os.path.join(root, newDirName)
+            os.rename(fullPath, fullRenamePath)
 
-# Start of the main loop
-for test in txtFiles:
-    currentTestCount += 1
+    # Find all txt files
+    txtFiles: list[str] = []
+    for root, dirs, files in os.walk(manipulatedFolder):
+        for file in files:
+            if file.endswith(".txt"):
+                fullPath = os.path.join(root, file)
+                txtFiles.append(fullPath)
 
-    folderTest = os.path.dirname(test)
-    relativePath = test.replace(manipulatedFolder, '')
+    nTests = len(txtFiles)
+    failedFiles: list[tuple[str, Exception]] = []
+    currentTestCount = 0
 
+    # Only import pandas when we actually need to process files
+    if nTests > 0:
+        pd = load_pandas()
+        print(f"Found {nTests} test files to process. Loading data processing libraries...")
 
-    # Check if the txt file is a test
-    if not functions.testCheck(test):
-        print(relativePath + " was not a test.")
-        os.remove(test)
-        continue
+    # Start of the main loop
+    for test in txtFiles:
+        currentTestCount += 1
+        folderTest = os.path.dirname(test)
+        relativePath = test.replace(manipulatedFolder, '')
 
-    # Start of the exeption handling
-    try:
-        with open(test,"r") as file:
-            fileContent = file.readlines()
+        # Check if the txt file is a test
+        if not functions.testCheck(test):
+            print(relativePath + " was not a test.")
+            os.remove(test)
+            continue
 
-        descriptionLines = fileContent[:2]
+        # Start of the exception handling
+        try:
+            with open(test, "r") as file:
+                fileContent = file.readlines()
 
-        numberDataRows = int(descriptionLines[1].split("=")[1].strip())
-        totalLines = len(fileContent)
+            descriptionLines = fileContent[:2]
+            numberDataRows = int(descriptionLines[1].split("=")[1].strip())
+            totalLines = len(fileContent)
+            unitsOfMeasure = fileContent[3]
 
-        unitsOfMeasure = fileContent[3]
+            headerLines = descriptionLines
+            headerLines.append(unitsOfMeasure)
 
-        headerLines = descriptionLines
-        headerLines.append(unitsOfMeasure)
+            # Importing the csv into a pandas table
+            rowsSkipped = [0, 1, 3] + list(range(4 + numberDataRows, totalLines))
 
-        # Importing the csv into a pandas table
-        rowsSkipped = [0,1,3] + list(range(4 + numberDataRows, totalLines))
+            data = StringIO(''.join(fileContent))
+            table = pd.read_csv(data, skiprows=rowsSkipped, header=0, encoding="cp1252", delimiter='\t', dtype=float)
 
-        data = StringIO(''.join(fileContent))
-        table = pd.read_csv(data, skiprows=rowsSkipped, header=0, encoding="cp1252", delimiter='\t', dtype = float)
+            # Edit the name of the headers to match the Matlab
+            table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
+            table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
 
-        #table = table[table.apply(functions.isRowAllFloat, axis=1)].reset_index(drop=True)
-        #table = table.astype('float')
+            (isLSS, LSSDirection) = functions.LSSCheck(test)
 
-        # Edit the name of the headers to match the Matlab
-        table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
-        table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
+            table['RelativeLateralDistance'] = table['RelativeLateralDistance'] * -1
 
-        (isLSS, LSSDirection) = functions.LSSCheck(test)
+            (newTime, startTestIndex) = functions.TTCProcess(
+                table['TimeToCollisionLongitudinal'].copy(),
+                table['Time'].copy(), isLSS)
 
-        table['RelativeLateralDistance'] = table['RelativeLateralDistance'] * -1
+            table['ADC6'] = functions.warningProcess(table['ADC6'].copy(), isLSS, newTime, startTestIndex, warningMode)
 
-        (newTime, startTestIndex) = functions.TTCProcess(
-            table['TimeToCollisionLongitudinal'].copy(),
-            table['Time'].copy(), isLSS)
+            if isLSS:
+                dt = table['Time'][1] - table['Time'][0]
+                approachSpeed, distToLine = functions.LSSProcessing(test, dt, table["ActualYFrontAxle"].copy(), LSSDirection)
+                table['ApproachSpeed'] = approachSpeed
+                table['DistToLine'] = distToLine
 
-        table['ADC6'] = functions.warningProcess(table['ADC6'].copy(), isLSS, newTime, startTestIndex, warningMode)
+            functions.exportFile(test, table, headerLines)
 
-        if isLSS:
-            dt = table['Time'][1] - table['Time'][0]
-            approachSpeed, distToLine = functions.LSSProcessing(test,dt,table["ActualYFrontAxle"].copy(), LSSDirection)
-            table['ApproachSpeed'] = approachSpeed
-            table['DistToLine'] = distToLine
+            currentPercentage = currentTestCount / nTests * 100
+            formattedPercentage = f"{currentPercentage:.2f}%"
+            print(formattedPercentage, "\t", relativePath, "was processed.")
 
-        functions.exportFile(test, table, headerLines)
+        except ValueError as e:
+            failedFiles.append((relativePath, e))
+            errorMessage = "There was an error: " + str(e) + "\n"
+            errorMessage = errorMessage + relativePath + " was NOT processed"
+            functions.decorateSentence(errorMessage, True)
 
-        currentPercentage = currentTestCount/nTests * 100
-        formattedPercentage = f"{currentPercentage:.2f}%"
-        print(formattedPercentage, "\t", relativePath, "was processed.")
+    # Write error log if there were failures
+    if len(failedFiles) != 0:
+        with open(os.path.join(parentFolder, "error_" + folderName + ".log"), 'w') as file:
+            for errorPath, error in failedFiles:
+                file.write("Error: " + str(error) + " File: " + errorPath + "\n")
 
-    #except Exception as e:
-    except ValueError as e:
-        failedFiles.append((relativePath, e))
-        errorMessage = "There was an error: " + str(e) + "\n"
-        errorMessage = errorMessage + relativePath + " was NOT processed"
-        functions.decorateSentence(errorMessage, True)
-
-
-if len(failedFiles) != 0:
-    with open(os.path.join(parentFolder, "error_" + folderName + ".log"), 'w') as file:
-        for errorPath, error in failedFiles:
-            file.write("Error: " + str(error) + " File: " + errorPath + "\n")
+if __name__ == "__main__":
+    main()
