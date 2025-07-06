@@ -2,17 +2,40 @@ from colorama import init, Fore, Style
 from enum import Enum
 import os
 
+# Function to load pandas when needed
+def loadPandas():
+    import pandas as pd
+    return pd
+# Function to open the dialog box for selecting the folder
+def getFolder():
+    from tkinter.filedialog import askdirectory
+    from tkinter import Tk
+
+    root = Tk()
+    root.withdraw()
+
+    sourceFolder = askdirectory(title="Select the folder.")
+
+    if not sourceFolder:
+        print("No folder was selected.")
+        return None
+
+    return sourceFolder
+
+ # Simplify the removal of characters
 def removeCharacters(genericString: str, charList: list[str]) -> str:
     cleanString = genericString
     for characters in charList:
         cleanString = cleanString.replace(characters, '')
     return cleanString
 
+# Check if the .txt file has also a .spec file in the same folder
 def testCheck(test: str) -> bool:
     testFolder = os.path.dirname(test)
     specPath = test.replace(".txt", ".spec")
     return os.path.exists(specPath)
 
+# Just to print error messages with more enphasis
 def decorateSentence(sentence: str, isRed: bool):
     init()
     if isRed:
@@ -22,6 +45,7 @@ def decorateSentence(sentence: str, isRed: bool):
     print("---------------------------------------------------------------------------------")
     print(Style.RESET_ALL)
 
+# Manually refactoring the header names according to the MATLAB notation
 def removeSpaceCaps(genericString: str) -> str:
     outputString: list[str] = []
     spacePresent = False
@@ -38,11 +62,13 @@ def removeSpaceCaps(genericString: str) -> str:
 
     return ''.join(outputString)
 
+# Enum for LSS direction, non used yet
 class Direction(Enum):
     RIGHT = object()
     LEFT = object()
     NONE = object()
 
+# Check if the test is an LSS test and finds the direction of the manover from the .spec file
 def LSSCheck(test: str) -> tuple[bool, Direction]:
     specTest = test.replace(".txt", ".spec")
 
@@ -73,17 +99,20 @@ def LSSCheck(test: str) -> tuple[bool, Direction]:
 
     return (isLSS, LSSdirection)
 
+# Process the TTC
 def TTCProcess(TTCVector, TimeVector, isLSS):
-    # Lazy import numpy only when needed
-    import numpy as np
 
     if isLSS or (TTCVector == 0).all():
         newTime = None
         startTimeIndex = None
         return (newTime, startTimeIndex)
 
+    # Lazy import numpy only when needed
+    import numpy as np
+
     index = 0
 
+    # The loop tries to fill holes in the TTC columns where the TTC is 0
     while index < len(TTCVector) or not index:
         if TTCVector[0] == 0:
             index = TTCVector[TTCVector > 0].index.tolist()[0]
@@ -112,6 +141,7 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
         TTCEq = m*xEq + yStart[0]
         TTCVector[yStart[1]:yEnd[1]] = TTCEq
 
+    # Shifts the Time frame to start at TTC 4
     startTestIndex = TTCVector[TTCVector < 4].index.tolist()
 
     if len(startTestIndex) == 0:
@@ -123,6 +153,7 @@ def TTCProcess(TTCVector, TimeVector, isLSS):
 
     return(newTime, startTestIndex)
 
+# Check if all the items in a collection are Floats, non needed anymore with the new import
 def isRowAllFloat(row):
     try:
         [float(x) for x in row]
@@ -130,6 +161,8 @@ def isRowAllFloat(row):
     except ValueError:
         return False
 
+# Finds were the ADC6 changes from HIGH to a threshold and then creates a step function
+# where the warning is 0 before and 5 after
 def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
     ADC6Out = ADC6Vector.copy()
     ADC6Out[:] = 0
@@ -156,6 +189,7 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
 
     return ADC6Out
 
+# Process the LSS to add the lateral velocity column and the distance from the line
 def LSSProcessing(test, dt: float, positionVector, LSSDirection):
     # Lazy import scipy only when needed for LSS processing
     from scipy import signal
@@ -183,6 +217,8 @@ def LSSProcessing(test, dt: float, positionVector, LSSDirection):
 
     return (derivPosition, distToLine)
 
+# Needed for LSS scenarios to be correctly processed in X-Zero
+# adds the units of measure to the two columns created for the LSS scenarios
 def addUnitToLSS(numberOfHeaders, unitOfMeasureHeader):
     numberUnitOfMeasure = unitOfMeasureHeader.count('\t')
     unitOfMeasureHeader = unitOfMeasureHeader.strip()
@@ -194,8 +230,8 @@ def addUnitToLSS(numberOfHeaders, unitOfMeasureHeader):
     unitOfMeasureHeader = unitOfMeasureHeader + '\tm/s\tm\n'
     return unitOfMeasureHeader
 
-
-
+# Exports the table to the .txt file. The encoding and the newline parameters are crucial
+# for the files to be imported in X-Zero
 def exportFile(testFile, table, headers: list[str]):
     with open(testFile, 'w', newline='\r\n', encoding="cp1252") as file:
         file.write(headers[0])

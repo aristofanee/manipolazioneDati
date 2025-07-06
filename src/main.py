@@ -3,27 +3,7 @@ import shutil
 import functions
 from io import StringIO
 
-def get_source_folder():
-    """Lazy import and use GUI only when needed"""
-    from tkinter.filedialog import askdirectory
-    from tkinter import Tk
-
-    root = Tk()
-    root.withdraw()
-
-    sourceFolder = askdirectory(title="Select the folder.")
-
-    if not sourceFolder:
-        print("No folder was selected.")
-        return None
-
-    return sourceFolder
-
-def load_pandas():
-    """Lazy import pandas only when processing files"""
-    import pandas as pd
-    return pd
-
+# Main function
 def main():
     # Configuration
     warningMode = 'auto'
@@ -32,7 +12,7 @@ def main():
     invalidHeaderCharacters = ['_', '(', ')', '.', '/']
 
     # Get source folder with lazy GUI import
-    sourceFolder = get_source_folder()
+    sourceFolder = functions.getFolder()
     if not sourceFolder:
         return
 
@@ -73,7 +53,7 @@ def main():
     failedFiles: list[tuple[str, Exception]] = []
     currentTestCount = 0
 
-    pd = load_pandas()
+    pd = functions.loadPandas()
     print("Found", nTests, "test files to process.")
 
     # Start of the main loop
@@ -140,7 +120,7 @@ def main():
             formattedPercentage = f"{currentPercentage:.2f}%"
             print(formattedPercentage, "\t", relativePath, "was processed.")
 
-        except ValueError as e:
+        except Exception as e:
             failedFiles.append((relativePath, e))
             errorMessage = "There was an error: " + str(e) + "\n"
             errorMessage = errorMessage + relativePath + " was NOT processed"
@@ -152,5 +132,13 @@ def main():
             for errorPath, error in failedFiles:
                 file.write("Error: " + str(error) + " File: " + errorPath + "\n")
 
+
+
+
+
+
+
+
+# Tells the script to start with the main function
 if __name__ == "__main__":
     main()
