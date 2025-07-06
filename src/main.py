@@ -74,9 +74,8 @@ def main():
     currentTestCount = 0
 
     # Only import pandas when we actually need to process files
-    if nTests > 0:
-        pd = load_pandas()
-        print(f"Found {nTests} test files to process. Loading data processing libraries...")
+    pd = load_pandas()
+    print(f"Found {nTests} test files to process. Loading data processing libraries...")
 
     # Start of the main loop
     for test in txtFiles:
