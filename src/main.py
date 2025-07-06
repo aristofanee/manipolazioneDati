@@ -73,9 +73,8 @@ def main():
     failedFiles: list[tuple[str, Exception]] = []
     currentTestCount = 0
 
-    # Only import pandas when we actually need to process files
     pd = load_pandas()
-    print(f"Found {nTests} test files to process. Loading data processing libraries...")
+    print("Found", nTests, "test files to process.")
 
     # Start of the main loop
     for test in txtFiles:
@@ -112,6 +111,9 @@ def main():
             table.columns = [functions.removeCharacters(header, invalidHeaderCharacters) for header in table.columns]
             table.columns = [functions.removeSpaceCaps(header) for header in table.columns]
 
+            numberOfColumns = len(table.columns)
+
+
             (isLSS, LSSDirection) = functions.LSSCheck(test)
 
             table['RelativeLateralDistance'] = table['RelativeLateralDistance'] * -1
@@ -127,6 +129,8 @@ def main():
                 approachSpeed, distToLine = functions.LSSProcessing(test, dt, table["ActualYFrontAxle"].copy(), LSSDirection)
                 table['ApproachSpeed'] = approachSpeed
                 table['DistToLine'] = distToLine
+                headerLines[2] = functions.addUnitToLSS(len(table.columns), headerLines[2])
+
 
             table = table.rename(columns = {'TimeToCollisionLongitudinal':'TimeToCollisionlongitudinal'})
 

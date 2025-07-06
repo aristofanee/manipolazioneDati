@@ -183,6 +183,19 @@ def LSSProcessing(test, dt: float, positionVector, LSSDirection):
 
     return (derivPosition, distToLine)
 
+def addUnitToLSS(numberOfHeaders, unitOfMeasureHeader):
+    numberUnitOfMeasure = unitOfMeasureHeader.count('\t')
+    unitOfMeasureHeader = unitOfMeasureHeader.strip()
+
+    for i in range(numberOfHeaders - numberUnitOfMeasure - 2):
+        unitOfMeasureHeader = unitOfMeasureHeader + '\t'
+
+
+    unitOfMeasureHeader = unitOfMeasureHeader + '\tm/s\tm\n'
+    return unitOfMeasureHeader
+
+
+
 def exportFile(testFile, table, headers: list[str]):
     with open(testFile, 'w', newline='\r\n', encoding="cp1252") as file:
         file.write(headers[0])
