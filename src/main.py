@@ -102,6 +102,12 @@ def main():
                 table['TimeToCollisionLongitudinal'].copy(),
                 table['Time'].copy(), isLSS)
 
+            if 'ADC6' not in table.columns:
+                indexADC5 = list(table.columns).index('ADC5')
+                newColumnNames = list(table.columns)
+                newColumnNames[indexADC5 + 1] = 'ADC6'
+                table.columns = newColumnNames
+
             table['ADC6'] = functions.warningProcess(table['ADC6'].copy(), isLSS, newTime, startTestIndex, warningMode)
 
             if isLSS:
