@@ -69,20 +69,22 @@ class Direction(Enum):
     NONE = object()
 
 # Check if the test is an LSS test and finds the direction of the manover from the .spec file
-def LSSCheck(test: str) -> tuple[bool, Direction]:
+def LSSCheck(test: str) -> tuple[tuple[bool,bool], Direction]:
     specTest = test.replace(".txt", ".spec")
 
     LSSIdentifiers = ('LKA','ELK','LDW')
     rightIdentifiers = ('Right', 'Road')
     leftIdentifiers = ('Left', 'Over', 'Onc', 'CMOv')
+    OncOverIndentifiers = ('Over', 'Onc', 'CMOv')
 
     with open(specTest, "r") as specFile:
         specContent = specFile.readlines()
 
     descriptionLine = specContent[1]
-    isLSS = any(identifier in descriptionLine for identifier in LSSIdentifiers)
+    isJustLSS = any(identifier in descriptionLine for identifier in LSSIdentifiers)
+    isOncOver = any(identifier in descriptionLine for identifier in OncOverIndentifiers) and 'NVT' not in descriptionLine
 
-    if isLSS:
+    if isJustLSS:
         if any(identifier in descriptionLine for identifier in rightIdentifiers):
             LSSdirection = Direction.RIGHT
         elif any(identifier in descriptionLine for identifier in leftIdentifiers):
@@ -97,12 +99,12 @@ def LSSCheck(test: str) -> tuple[bool, Direction]:
         with open(specTest, "w") as specFile:
             specFile.writelines(specContent)
 
-    return (isLSS, LSSdirection)
+    return ((isJustLSS,isOncOver), LSSdirection)
 
 # Process the TTC
 def TTCProcess(TTCVector, TimeVector, isLSS):
 
-    if isLSS or (TTCVector == 0).all():
+    if (isLSS[0] and not isLSS[1]) or (TTCVector == 0).all():
         newTime = None
         startTimeIndex = None
         return (newTime, startTimeIndex)
@@ -167,7 +169,7 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
     ADC6Out = ADC6Vector.copy()
     ADC6Out[:] = 0
 
-    if isLSS or startTestIndex == None:
+    if (isLSS[0] and not isLSS[1]) or startTestIndex == None:
         return ADC6Out
 
     warningThreshhold = 1
@@ -190,21 +192,25 @@ def warningProcess(ADC6Vector, isLSS, newTime, startTestIndex, warningMode):
     return ADC6Out
 
 # Process the LSS to add the lateral velocity column and the distance from the line
-def LSSProcessing(test, dt: float, positionVector, LSSDirection):
+def LSSProcessing(test, dt: float, positionVector, LSSDirection, isOncOver):
     # Lazy import scipy only when needed for LSS processing
     from scipy import signal
 
     parentFolder = os.path.dirname(test)
     lineFolder = os.path.dirname(parentFolder)
-    zeroFile = os.path.join(lineFolder, "zero.ini")
 
-    if not os.path.isfile(zeroFile):
-        raise Exception("No zero.ini file was found.")
+    if not isOncOver:
+        zeroFile = os.path.join(lineFolder, "zero.ini")
 
-    with open(zeroFile, 'r') as file:
-        zero = file.readline()
+        if not os.path.isfile(zeroFile):
+            raise Exception("No zero.ini file was found.")
 
-    zero = float(zero)
+        with open(zeroFile, 'r') as file:
+            zero = file.readline()
+        zero = float(zero)
+    else:
+        zero = 0
+
     distToLine = positionVector - zero
 
     Wn = 10/50

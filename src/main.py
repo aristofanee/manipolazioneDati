@@ -110,9 +110,9 @@ def main():
 
             table['ADC6'] = functions.warningProcess(table['ADC6'].copy(), isLSS, newTime, startTestIndex, warningMode)
 
-            if isLSS:
+            if isLSS[0]:
                 dt = table['Time'][1] - table['Time'][0]
-                approachSpeed, distToLine = functions.LSSProcessing(test, dt, table["ActualYFrontAxle"].copy(), LSSDirection)
+                approachSpeed, distToLine = functions.LSSProcessing(test, dt, table["ActualYFrontAxle"].copy(), LSSDirection, isLSS[1])
                 table['ApproachSpeed'] = approachSpeed
                 table['DistToLine'] = distToLine
                 headerLines[2] = functions.addUnitToLSS(len(table.columns), headerLines[2])

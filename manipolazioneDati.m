@@ -297,6 +297,7 @@ function [isLSS,LSSDirection] = LSSCheck2(filename)
     
     RightIdentifiers = {'Right', 'Road'};
     LeftIdentifiers = {'Left', 'Over', 'Onc', 'CMOv'};
+    LSSC2CIdentifiers = {'Onc', 'CMOv'};
     
     if isLSS 
         
