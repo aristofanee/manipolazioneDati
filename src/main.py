@@ -115,8 +115,8 @@ def main():
                 approachSpeed, distToLine = functions.LSSProcessing(test, dt, table["ActualYFrontAxle"].copy(), LSSDirection, isLSS[1])
                 table['ApproachSpeed'] = approachSpeed
                 table['DistToLine'] = distToLine
-                headerLines[2] = functions.addUnitToLSS(len(table.columns), headerLines[2])
-
+                #headerLines[2] = functions.addUnitToLSS(len(table.columns), headerLines[2])
+                headerLines[2] = functions.addUnitToLSS_2(headerLines[2])
 
             table = table.rename(columns = {'TimeToCollisionLongitudinal':'TimeToCollisionlongitudinal'})
 

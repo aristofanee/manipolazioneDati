@@ -236,6 +236,11 @@ def addUnitToLSS(numberOfHeaders, unitOfMeasureHeader):
     unitOfMeasureHeader = unitOfMeasureHeader + '\tm/s\tm\n'
     return unitOfMeasureHeader
 
+def addUnitToLSS_2(unitOfMeasureHeader):
+    unitOfMeasureHeader = unitOfMeasureHeader.replace('\n', '')
+    unitOfMeasureHeader = unitOfMeasureHeader + '\tm/s\tm\n'
+    return unitOfMeasureHeader
+
 # Exports the table to the .txt file. The encoding and the newline parameters are crucial
 # for the files to be imported in X-Zero
 def exportFile(testFile, table, headers: list[str]):
